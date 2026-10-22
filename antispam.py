@@ -1,8 +1,6 @@
 import asyncio
 import logging
 from aiogram import Bot, Dispatcher, types
-# ИСПРАВЛЕНО: ChatTypeFilter заменен на ChatType (для aiogram 3.x)
-from aiogram.filters import ChatType
 
 # --- НАСТРОЙКИ ---
 API_TOKEN = '8845906304:AAHKqme0R89-8O1qrKzfRPCPFHBfwECEcK4'
@@ -29,8 +27,6 @@ async def find_topic_id(chat_id: int, title: str) -> int | None:
                 return topic.message_thread_id
     except Exception as e:
         logging.error(f"Не удалось получить список тем: {e}")
-        # Если бот не админ в группе, get_forum_topic_list упадет. 
-        # Возвращаем None, чтобы main() корректно остановил бота.
     return None
 
 async def check_admin_privileges() -> bool:
@@ -52,8 +48,9 @@ async def check_admin_privileges() -> bool:
         logging.error(f"Не удалось проверить привилегии: {e}")
     return False
 
-# ИСПРАВЛЕНО: Используем новый фильтр ChatType
-@dp.message(ChatType([types.ChatType.SUPERGROUP, types.ChatType.CHANNEL]))
+# ИЗМЕНЕНО: Убран импорт ChatTypeFilter.
+# Фильтрация по типу чата теперь происходит через лямбда-функцию прямо в декораторе.
+@dp.message(lambda message: message.chat.type in [types.ChatType.SUPERGROUP, types.ChatType.CHANNEL])
 async def delete_target_bot_messages(message: types.Message):
     global target_topic_id
 
