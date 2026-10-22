@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from aiogram import Bot, Dispatcher, types
+from aiogram.client.default import DefaultBotProperties
 
 # --- НАСТРОЙКИ ---
 API_TOKEN = '8845906304:AAHKqme0R89-8O1qrKzfRPCPFHBfwECEcK4'
@@ -48,8 +49,7 @@ async def check_admin_privileges() -> bool:
         logging.error(f"Не удалось проверить привилегии: {e}")
     return False
 
-# ИЗМЕНЕНО: Убран импорт ChatTypeFilter.
-# Фильтрация по типу чата теперь происходит через лямбда-функцию прямо в декораторе.
+# Фильтрация по типу чата через лямбда-функцию (так как ChatTypeFilter отсутствует в вашей версии)
 @dp.message(lambda message: message.chat.type in [types.ChatType.SUPERGROUP, types.ChatType.CHANNEL])
 async def delete_target_bot_messages(message: types.Message):
     global target_topic_id
@@ -73,7 +73,8 @@ async def delete_target_bot_messages(message: types.Message):
                 logging.error(f"Неизвестная ошибка при удалении {message.message_id}: {e}")
 
 async def main():
-    bot = Bot(token=API_TOKEN, parse_mode="HTML")
+    # Инициализация бота через DefaultBotProperties (актуально для версий 3.7.0+)
+    bot = Bot(token=API_TOKEN, default=DefaultBotProperties(parse_mode="HTML"))
     dp.bot = bot
 
     me = await bot.get_me()
