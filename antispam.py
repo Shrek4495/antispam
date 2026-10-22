@@ -1,7 +1,8 @@
 import asyncio
 import logging
 from aiogram import Bot, Dispatcher, types
-from aiogram.filters import ChatTypeFilter
+# ИСПРАВЛЕНО: ChatTypeFilter заменен на ChatType (для aiogram 3.x)
+from aiogram.filters import ChatType
 
 # --- НАСТРОЙКИ ---
 API_TOKEN = '8845906304:AAHKqme0R89-8O1qrKzfRPCPFHBfwECEcK4'
@@ -28,6 +29,8 @@ async def find_topic_id(chat_id: int, title: str) -> int | None:
                 return topic.message_thread_id
     except Exception as e:
         logging.error(f"Не удалось получить список тем: {e}")
+        # Если бот не админ в группе, get_forum_topic_list упадет. 
+        # Возвращаем None, чтобы main() корректно остановил бота.
     return None
 
 async def check_admin_privileges() -> bool:
@@ -38,7 +41,6 @@ async def check_admin_privileges() -> bool:
         
         for admin in admins:
             if admin.user.id == me.id:
-                # Проверяем объект ChatMemberAdministrator
                 if isinstance(admin, types.ChatMemberAdministrator):
                     if admin.privileges and admin.privileges.can_delete_messages:
                         logging.info("Привилегия 'Удаление сообщений' подтверждена.")
@@ -50,7 +52,8 @@ async def check_admin_privileges() -> bool:
         logging.error(f"Не удалось проверить привилегии: {e}")
     return False
 
-@dp.message(ChatTypeFilter([types.ChatType.SUPERGROUP, types.ChatType.CHANNEL]))
+# ИСПРАВЛЕНО: Используем новый фильтр ChatType
+@dp.message(ChatType([types.ChatType.SUPERGROUP, types.ChatType.CHANNEL]))
 async def delete_target_bot_messages(message: types.Message):
     global target_topic_id
 
@@ -65,11 +68,10 @@ async def delete_target_bot_messages(message: types.Message):
             await message.delete()
             logging.info(f"Удалено сообщение (ID: {message.message_id}) от бота {TARGET_BOT_ID}")
         except Exception as e:
-            # Обработка специфических ошибок
             if "message is too old" in str(e):
                 logging.warning(f"Сообщение {message.message_id} старше 24 часов. Удаление невозможно (права админа).")
             elif "message can't be deleted" in str(e):
-                logging.error(f"Нет прав на удаление сообщения {message.message_id}.")
+                logging.error(f"Нет прав на удаление сообщения {message.message_id}. Проверьте, является ли бот создателем группы.")
             else:
                 logging.error(f"Неизвестная ошибка при удалении {message.message_id}: {e}")
 
@@ -90,7 +92,7 @@ async def main():
     target_topic_id = await find_topic_id(GROUP_ID, TARGET_TOPIC_TITLE)
 
     if target_topic_id is None:
-        logging.critical(f"Топик '{TARGET_TOPIC_TITLE}' не найден. Бот остановлен.")
+        logging.critical(f"Топик '{TARGET_TOPIC_TITLE}' не найден или у бота нет прав админа в группе. Бот остановлен.")
         return
     
     logging.info(f"Топик '{TARGET_TOPIC_TITLE}' (ID: {target_topic_id}) мониторится.")
