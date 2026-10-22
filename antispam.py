@@ -49,7 +49,7 @@ async def check_admin_privileges() -> bool:
         logging.error(f"Не удалось проверить привилегии: {e}")
     return False
 
-# Фильтрация по типу чата через лямбда-функцию (так как ChatTypeFilter отсутствует в вашей версии)
+# Фильтрация по типу чата через лямбда-функцию (так как ChatTypeFilter отсутствует)
 @dp.message(lambda message: message.chat.type in [types.ChatType.SUPERGROUP, types.ChatType.CHANNEL])
 async def delete_target_bot_messages(message: types.Message):
     global target_topic_id
@@ -73,7 +73,8 @@ async def delete_target_bot_messages(message: types.Message):
                 logging.error(f"Неизвестная ошибка при удалении {message.message_id}: {e}")
 
 async def main():
-    # Инициализация бота через DefaultBotProperties (актуально для версий 3.7.0+)
+    # КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: 
+    # parse_mode перенесен внутрь DefaultBotProperties
     bot = Bot(token=API_TOKEN, default=DefaultBotProperties(parse_mode="HTML"))
     dp.bot = bot
 
